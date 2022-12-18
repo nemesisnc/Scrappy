@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.Playwright;
 using Microsoft.Playwright.NUnit;
 using NUnit.Framework;
 
@@ -19,7 +18,7 @@ public class Tests : PageTest
     // }
 
     [Test]
-    public async Task HaveDownloadedLastMissingJoncs()
+    public async Task HaveLinkToLastMissingJoncs()
     {
         await Page.GotoAsync("https://juridoc.gouv.nc/");
 
@@ -37,16 +36,9 @@ public class Tests : PageTest
 
         await Page.FrameLocator("frame[name=\"Mframe\"]").FrameLocator("frame[name=\"Lframe\"]").Locator("#sliderDis1").SelectOptionAsync(new[] { "2022" });
 
-        var download = await Page.RunAndWaitForDownloadAsync(async () =>
-        {
-            await Page.FrameLocator("frame[name=\"Mframe\"]").FrameLocator("frame[name=\"Lframe\"]").GetByRole(AriaRole.Link, new() { NameString = "Consulter la version complète Pdf du n° 10488 (HTTP)" }).ClickAsync(new LocatorClickOptions
-            {
-                Modifiers = new[] { KeyboardModifier.Alt },
-            });
-        });
-
-        // Save downloaded file somewhere
-        await download.SaveAsAsync("./10488.pdf");
+        var joncDownloadLink = Page.FrameLocator("frame[name=\"Mframe\"]").FrameLocator("frame[name=\"Lframe\"]").GetByRole(AriaRole.Link, new() { NameString = "Consulter la version complète Pdf du n° 10488 (HTTP)" });
+        
+        await Expect(joncDownloadLink).ToBeEnabledAsync();
     }
 
     // [TearDown]
