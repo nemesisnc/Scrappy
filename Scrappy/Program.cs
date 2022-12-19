@@ -5,6 +5,19 @@ class Program
 {
     public static async Task Main()
     {
+        var lastDownloadedJonc = Directory.EnumerateFiles("./", "*.pdf")
+            .Where(f => f.Length == 11 && int.TryParse(f.Substring(2, 5), out int num))
+            .OrderByDescending(f => f)
+            .FirstOrDefault();
+
+        int lastNumeroJonc;
+        if (lastDownloadedJonc != null) {
+            lastNumeroJonc = int.Parse(lastDownloadedJonc.Substring(2, 5));
+        }
+        else {
+            throw new FileNotFoundException();
+        }
+
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
@@ -19,14 +32,29 @@ class Program
 
         await page.FrameLocator("frame[name=\"Mframe\"]").FrameLocator("frame[name=\"Lframe\"]").Locator("#sliderDis1").SelectOptionAsync(new[] { "2022" });
 
-        var download = await page.RunAndWaitForDownloadAsync(async () =>
-        {
-            await page.FrameLocator("frame[name=\"Mframe\"]").FrameLocator("frame[name=\"Lframe\"]").GetByRole(AriaRole.Link, new() { NameString = "Consulter la version complète Pdf du n° 10488 (HTTP)" }).ClickAsync(new LocatorClickOptions
-            {
-                Modifiers = new[] { KeyboardModifier.Alt },
-            });
-        });
 
-        await download.SaveAsAsync("./10488.pdf");
+        bool joncNotFound = false;
+        while (!joncNotFound)
+        {
+            lastNumeroJonc++;
+
+            try
+            {
+                var download = await page.RunAndWaitForDownloadAsync(async () =>
+                {
+                    await page.FrameLocator("frame[name=\"Mframe\"]").FrameLocator("frame[name=\"Lframe\"]").GetByRole(AriaRole.Link, new() { NameString = $"Consulter la version complète Pdf du n° {lastNumeroJonc} (HTTP)" }).ClickAsync(new LocatorClickOptions
+                    {
+                        Modifiers = new[] { KeyboardModifier.Alt },
+                    });
+                }, new PageRunAndWaitForDownloadOptions { Timeout = 5000});
+
+                await download.SaveAsAsync($"./{lastNumeroJonc}.pdf");
+            }
+            catch (System.TimeoutException)
+            {
+                // Next Jonc not found
+                joncNotFound = true;
+            }
+        }
     }
 }
